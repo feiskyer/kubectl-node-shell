@@ -85,17 +85,13 @@ os="$($kubectl get node $node -o jsonpath="{.metadata.labels.kubernetes\.io/os}"
 
 # Set pod configuration per operating system
 if [ "$os" = "windows" ]; then
-  image="${KUBECTL_NODE_SHELL_IMAGE_WINDOWS:-mcr.microsoft.com/powershell}"
+  image="${KUBECTL_NODE_SHELL_IMAGE_WINDOWS:-ghcr.io/feiskyer/winservercore:v1.0}"
   name="pwsh"
   pod="${name}-$(env LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 6)"
   # pwsh has to be launched via cmd.exe because of how containerd 1.6 handles the mount of the container filesystem
   # see https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#volume-mounts
-  cmd_default='"cmd.exe", "/c", "%CONTAINER_SANDBOX_MOUNT_POINT%\\Program Files\\PowerShell\\pwsh.exe", "-nol", "-wd", "C:\\"'
+  cmd_default='"cmd.exe", "/c", "cd c:/ & %CONTAINER_SANDBOX_MOUNT_POINT%\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -nol"'
   cmd_start="${KUBECTL_NODE_SHELL_COMMAND_WINDOWS:-$cmd_default}"
-  if [ $image = "mcr.microsoft.com/powershell" ] || [ $image = "mcr.microsoft.com/powershell:latest" ]; then
-    # Path "PowerShell\\latest\\pwsh.exe" should be used if the powershell image is using latest tag
-    cmd_start='"cmd.exe", "/c", "%CONTAINER_SANDBOX_MOUNT_POINT%\\Program Files\\PowerShell\\latest\\pwsh.exe", "-nol", "-wd", "C:\\"'
-  fi
   cmd_arg_prefix=', "-Command"'
   cmd_default=''
   security_context='{"privileged":true,"windowsOptions":{"hostProcess":true,"runAsUserName":"NT AUTHORITY\\SYSTEM"}}'
